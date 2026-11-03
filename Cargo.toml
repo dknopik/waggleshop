@@ -1,0 +1,18 @@
+[package]
+name = "waggle-workshop"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+anyhow = "1"
+# Waggle hands out its topic receivers and piece senders as async-channel types.
+async-channel = "2.5"
+clap = { version = "4", features = ["derive"] }
+futures = "0.3"
+# Must match the libp2p revision waggle depends on.
+libp2p = { git = "https://github.com/sigp/rust-libp2p", rev = "accba72bb4eafc692ac518339ef2c4080b6f8461", features = ["ed25519", "quic", "tokio"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+waggle = { git = "https://github.com/dknopik/waggle", branch = "alternate-design" }
