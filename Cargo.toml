@@ -15,4 +15,4 @@ libp2p = { git = "https://github.com/sigp/rust-libp2p", rev = "accba72bb4eafc692
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-waggle = { git = "https://github.com/dknopik/waggle", branch = "alternate-design" }
+waggle = { git = "https://github.com/dknopik/waggle", rev = "3b031d0f" }

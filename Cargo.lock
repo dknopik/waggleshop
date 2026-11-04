@@ -3066,7 +3066,7 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 [[package]]
 name = "waggle"
 version = "0.1.0"
-source = "git+https://github.com/dknopik/waggle?branch=alternate-design#3b031d0f0611e3735a0eff87911c7301cd8d255d"
+source = "git+https://github.com/dknopik/waggle?rev=3b031d0f#3b031d0f0611e3735a0eff87911c7301cd8d255d"
 dependencies = [
  "async-channel",
  "asynchronous-codec",
