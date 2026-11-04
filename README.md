@@ -50,6 +50,10 @@ Ctrl-C stops them all.
 Arguments after `--` go to every node, which is handy once you add flags of your own:
 `./start.sh line -- --my-flag`. The script needs bash. On Windows, run it from WSL or Git Bash.
 
+Lines you type while the nodes run go to the stdin of node 0. Start a line with a node's number
+to send the rest of it to that node instead: `3 hello` sends `hello` to node 3. The node ignores
+them until you read its stdin in your code.
+
 ## Where to start
 
 Everything lives in `src/main.rs`. The waggle API is small:

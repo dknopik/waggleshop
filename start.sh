@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Starts several nodes on localhost, connected in a full mesh or a line, and
-# prefixes each node's output with its name. Ctrl-C stops them all.
+# prefixes each node's output with its name. Lines typed into the script go to
+# the stdin of the node they name. Ctrl-C stops them all.
 set -euo pipefail
 
 usage() {
@@ -13,6 +14,10 @@ Starts NODES nodes (default 4), listening on BASE_PORT (default 9000) and up.
   line  every node connects to the one before it
 
 Arguments after -- are passed to every node.
+
+Lines typed while the nodes run go to the stdin of node 0. Start a line with a
+node's number to send the rest of it to that node: "3 hello" sends "hello" to
+node 3.
 EOF
 }
 
@@ -57,8 +62,31 @@ prefix() {
     awk -v p="$1" '{ print p $0; fflush() }'
 }
 
+# Sends every line read to the node it names: "3 hello" sends "hello" to node
+# 3, and a line without a number goes to node 0 unchanged.
+forward_input() {
+    local line target text
+    # When started with `&`, reading the terminal would suspend the script and
+    # all nodes. Ignoring the signal makes the read fail instead.
+    trap '' TTIN
+    while IFS= read -r line; do
+        target=0 text=$line
+        if [[ $line =~ ^([0-9]+)[[:space:]]+(.*)$ ]]; then
+            target=${BASH_REMATCH[1]} text=${BASH_REMATCH[2]}
+        fi
+        if [[ ! -p $inputs/$target ]]; then
+            echo "no node $target" >&2
+        elif ! kill -0 "${pids[target]}" 2>/dev/null; then
+            echo "node $target has exited" >&2
+        else
+            printf '%s\n' "$text" 1<>"$inputs/$target"
+        fi
+    done
+}
+
+inputs=$(mktemp -d)
 pids=()
-trap 'kill ${pids[@]+"${pids[@]}"} 2>/dev/null' EXIT
+trap 'rm -rf "$inputs"; kill ${pids[@]+"${pids[@]}"} ${forwarder:-} 2>/dev/null' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
@@ -83,8 +111,20 @@ for ((i = 0; i < nodes; i++)); do
         label=$'\e['"${colors[i % ${#colors[@]}]}m$label"$'\e[0m'
     fi
     echo "$label waggle-workshop ${args[*]}${*:+ $*}"
-    "$bin" "${args[@]}" "$@" > >(prefix "$label ") 2>&1 &
+
+    # The node's stdin is a FIFO. Opening it read-write means the node never
+    # sees EOF, however often forward_input opens and closes its end. Opening
+    # it here, not in the node's redirections, means it is open before any
+    # input arrives, which would otherwise be lost.
+    mkfifo "$inputs/$i"
+    exec 3<>"$inputs/$i"
+    "$bin" "${args[@]}" "$@" <&3 3<&- > >(prefix "$label ") 2>&1 &
     pids+=($!)
+    exec 3<&-
 done
 
-wait
+# In the background, so that the script still ends once all nodes have exited.
+# Without the redirection, a background job's stdin is /dev/null.
+forward_input <&0 &
+forwarder=$!
+wait "${pids[@]}" || true
